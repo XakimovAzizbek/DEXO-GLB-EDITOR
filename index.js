@@ -3,12 +3,15 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { forge } from '@three-ws/forge';
+import { Client, handle_file } from '@gradio/client';
 
 // ===== DOM Elementlari =====
-const promptInput = document.getElementById('promptInput');
-const hintChips = document.querySelectorAll('.hint-chip');
-const tierSelect = document.getElementById('tierSelect');
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const browseBtn = document.getElementById('browseBtn');
+const previewContainer = document.getElementById('previewContainer');
+const previewImage = document.getElementById('previewImage');
+const clearBtn = document.getElementById('clearBtn');
 const generateBtn = document.getElementById('generateBtn');
 const btnText = generateBtn.querySelector('.btn-text');
 const spinner = generateBtn.querySelector('.spinner');
@@ -17,6 +20,13 @@ const viewerEl = document.getElementById('viewer');
 const placeholder = viewerEl.querySelector('.viewer-placeholder');
 const downloadBtn = document.getElementById('downloadBtn');
 const resetCameraBtn = document.getElementById('resetCameraBtn');
+
+// ===== Zaxira Space'lar ro'yxati (ishlamasa keyingisiga o'tadi) =====
+const SPACE_CANDIDATES = [
+    { name: 'stabilityai/stable-point-aware-3d', endpoint: '/generate' },
+    { name: 'tencent/Hunyuan3D-2', endpoint: '/generation_all' },
+    { name: 'JeffreyXiang/TRELLIS', endpoint: '/image_to_3d' }
+];
 
 // ===== Three.js Sahnasi =====
 let scene, camera, renderer, controls, loadedModel = null;
@@ -80,55 +90,189 @@ function onResize() {
     renderer.setSize(w, h);
 }
 
-// ===== Matn kiritish logikasi =====
-promptInput.addEventListener('input', () => {
-    generateBtn.disabled = promptInput.value.trim().length < 3;
+// ===== Rasm yuklash logikasi =====
+let selectedFile = null;
+
+dropZone.addEventListener('click', () => fileInput.click());
+browseBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    fileInput.click();
 });
 
-// Tez tanlash tugmalari
-hintChips.forEach(chip => {
-    chip.addEventListener('click', () => {
-        promptInput.value = chip.dataset.prompt;
-        promptInput.dispatchEvent(new Event('input'));
-        promptInput.focus();
-    });
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
 });
 
-// ===== Forge SDK orqali 3D generatsiya =====
+dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('dragover');
+});
+
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const files = e.dataTransfer.files;
+    if (files.length > 0) handleFile(files[0]);
+});
+
+fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) handleFile(e.target.files[0]);
+});
+
+function handleFile(file) {
+    const validTypes = ['image/png', 'image/jpeg', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+        showStatus('Faqat PNG, JPG yoki WebP formatdagi rasmlar qabul qilinadi.', 'error');
+        return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+        showStatus('Rasm hajmi 8 MB dan oshmasligi kerak.', 'error');
+        return;
+    }
+
+    selectedFile = file;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        previewImage.src = e.target.result;
+        previewContainer.classList.remove('hidden');
+        dropZone.classList.add('hidden');
+    };
+    reader.readAsDataURL(file);
+
+    generateBtn.disabled = false;
+    showStatus('Rasm tayyor. "3D Model Yaratish" tugmasini bosing.', 'success');
+}
+
+clearBtn.addEventListener('click', () => {
+    selectedFile = null;
+    fileInput.value = '';
+    previewContainer.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    generateBtn.disabled = true;
+    hideStatus();
+});
+
+// ===== Zaxira Space'larni sinab ko'rish =====
 async function generate3DModel() {
-    const prompt = promptInput.value.trim();
-    if (prompt.length < 3) return;
+    if (!selectedFile) return;
 
     setLoading(true);
-    showStatus('AI model yaratilmoqda... Bu 10–60 soniya olishi mumkin.', 'loading');
 
-    try {
-        // ✅ Matn → 3D: SDK orqali chaqirish
-        const model = await forge(prompt, {
-            tier: tierSelect.value,   // 'draft' | 'standard' | 'high'
-            path: 'geometry'          // matn uchun 'geometry' yo'lini ishlatish
-        });
+    let lastError = null;
 
-        console.log('Forge natijasi:', model);
+    // Har bir Space'ni navbat bilan sinab ko'rish
+    for (const space of SPACE_CANDIDATES) {
+        try {
+            showStatus(`"${space.name}" sinab ko'rilmoqda...`, 'loading');
 
-        const glbUrl = model.glbUrl;
-        if (!glbUrl) {
-            throw new Error('GLB URL qaytarmadi: ' + JSON.stringify(model));
+            const glbUrl = await generateWithSpace(space, selectedFile);
+
+            if (glbUrl) {
+                currentGlbUrl = glbUrl;
+                await loadGLB(glbUrl);
+
+                showStatus('✅ 3D model muvaffaqiyatli yaratildi!', 'success');
+                downloadBtn.disabled = false;
+                resetCameraBtn.disabled = false;
+                setLoading(false);
+                return;
+            }
+        } catch (err) {
+            console.warn(`"${space.name}" ishlamadi:`, err.message);
+            lastError = err;
+            // Keyingi Space'ga o'tish
         }
-
-        currentGlbUrl = glbUrl;
-        await loadGLB(glbUrl);
-
-        showStatus('✅ 3D model muvaffaqiyatli yaratildi!', 'success');
-        downloadBtn.disabled = false;
-        resetCameraBtn.disabled = false;
-
-    } catch (err) {
-        console.error('Xatolik:', err);
-        showStatus('❌ Xatolik: ' + (err.message || 'Noma\'lum xatolik'), 'error');
-    } finally {
-        setLoading(false);
     }
+
+    // Barcha Space'lar ishlamadi
+    setLoading(false);
+    showStatus(
+        '❌ Barcha Space\'lar vaqtincha ishlamayapti. Iltimos, 1-2 daqiqadan so\'ng qayta urinib ko\'ring. Xatolik: ' +
+        (lastError?.message || 'Noma\'lum xatolik'),
+        'error'
+    );
+}
+
+// ===== Bitta Space bilan generatsiya =====
+async function generateWithSpace(space, file) {
+    showStatus(`"${space.name}" ga ulanmoqda...`, 'loading');
+
+    const app = await Client.connect(space.name, {
+        status_callback: (status) => {
+            console.log(`[${space.name}] holati:`, status);
+            if (status.status === 'sleeping') {
+                showStatus(`"${space.name}" uyg'onmoqda... Iltimos kuting.`, 'loading');
+            }
+            if (status.status === 'space_error') {
+                throw new Error(`Space xatosi: ${status.message}`);
+            }
+        }
+    });
+
+    showStatus(`"${space.name}" da 3D model yaratilmoqda...`, 'loading');
+
+    let result;
+
+    // Har bir Space uchun mos parametrlar
+    if (space.name === 'stabilityai/stable-point-aware-3d') {
+        result = await app.predict(space.endpoint, [
+            handle_file(file),  // image
+            0.85,                // foreground_ratio
+            1.0,                 // guidance_scale
+            50                   // num_steps
+        ]);
+    } else if (space.name === 'tencent/Hunyuan3D-2') {
+        result = await app.predict(space.endpoint, [
+            '',
+            handle_file(file),
+            null, null, null, null,
+            50, 7.5, 1234, 256, true, 200000, false
+        ]);
+    } else if (space.name === 'JeffreyXiang/TRELLIS') {
+        result = await app.predict(space.endpoint, [
+            handle_file(file),
+            0.85,
+            50,
+            1234,
+            256
+        ]);
+    }
+
+    console.log(`[${space.name}] natija:`, result);
+
+    // Natijadan GLB URL ni ajratib olish
+    return extractGlbUrl(result, space.name);
+}
+
+// ===== GLB URL ni natijadan ajratib olish =====
+function extractGlbUrl(result, spaceName) {
+    if (!result || !result.data) {
+        throw new Error('Natija bo\'sh qaytdi.');
+    }
+
+    const data = result.data;
+
+    // Har xil Space'lar turli formatda qaytaradi — barchasini sinab ko'ramiz
+    const candidates = [
+        data[0], data[1], data[2], data[3], data[4]
+    ].filter(Boolean);
+
+    for (const item of candidates) {
+        // String URL
+        if (typeof item === 'string' && item.startsWith('http')) {
+            return item;
+        }
+        // Gradio FileData obyekti
+        if (typeof item === 'object' && item !== null) {
+            if (item.url && item.url.startsWith('http')) return item.url;
+            if (item.path) {
+                return `https://${spaceName.replace('/', '-').toLowerCase()}.hf.space/gradio_api/file=${item.path}`;
+            }
+        }
+    }
+
+    throw new Error('GLB URL topilmadi. Javob: ' + JSON.stringify(data));
 }
 
 // ===== GLB yuklash =====
@@ -238,10 +382,3 @@ generateBtn.addEventListener('click', generate3DModel);
 
 // ===== Ishga tushirish =====
 initThree();
-
-// Klaviatura shortcut: Ctrl+Enter
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        if (!generateBtn.disabled) generate3DModel();
-    }
-});

@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 3D Generator — Matn → GLB</title>
+    <title>AI 3D Generator — Rasm → GLB</title>
     <link rel="stylesheet" href="index.css">
     <script type="importmap">
     {
         "imports": {
             "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
             "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-            "@three-ws/forge": "https://esm.sh/@three-ws/forge@0.2.1"
+            "@gradio/client": "https://cdn.jsdelivr.net/npm/@gradio/client@2.7.1/dist/index.min.js"
         }
     }
     </script>
@@ -19,46 +19,31 @@
     <div class="app">
         <header>
             <h1>🧊 AI 3D Generator</h1>
-            <p class="subtitle">Ob'ektni tasvirlab yozing — bir necha soniyada 3D GLB model oling</p>
+            <p class="subtitle">Rasm yuklang — bir necha soniyada 3D GLB model oling</p>
         </header>
 
         <main class="main-panel">
             <section class="upload-panel">
-                <!-- Matn kiritish maydoni -->
-                <div class="prompt-section">
-                    <label for="promptInput" class="prompt-label">📝 Ob'ekt tavsifi:</label>
-                    <textarea 
-                        id="promptInput" 
-                        class="prompt-input" 
-                        rows="4" 
-                        placeholder="Masalan: a glazed ceramic teapot, a chrome robot with neon trim, a low-poly red fox sitting..."
-                    ></textarea>
-                    <div class="prompt-hints">
-                        <span class="hint-chip" data-prompt="a glazed ceramic teapot">🫖 Choynak</span>
-                        <span class="hint-chip" data-prompt="a chrome robot with neon trim">🤖 Robot</span>
-                        <span class="hint-chip" data-prompt="a low-poly red fox, sitting">🦊 Tulki</span>
-                        <span class="hint-chip" data-prompt="a sci-fi combat helmet, brushed metal">🪖 Dubulg'a</span>
-                        <span class="hint-chip" data-prompt="a vintage film camera">📷 Kamera</span>
+                <div id="dropZone" class="drop-zone">
+                    <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp" hidden>
+                    <div class="drop-content">
+                        <span class="drop-icon">📷</span>
+                        <p><strong>Rasmni bu yerga tashlang</strong></p>
+                        <p class="hint">yoki <button type="button" id="browseBtn" class="link-btn">fayl tanlang</button></p>
+                        <p class="formats">PNG, JPG, WebP — maks. 8 MB</p>
                     </div>
                 </div>
 
-                <!-- Sifat darajasi -->
-                <div class="settings">
-                    <label for="tierSelect">Sifat darajasi:</label>
-                    <select id="tierSelect">
-                        <option value="draft">Draft — Tez (bepul)</option>
-                        <option value="standard" selected>Standard — Balans (bepul)</option>
-                        <option value="high">High — Maksimal (bepul)</option>
-                    </select>
+                <div id="previewContainer" class="preview-container hidden">
+                    <img id="previewImage" alt="Yuklangan rasm">
+                    <button id="clearBtn" class="clear-btn" title="O'chirish">✕</button>
                 </div>
 
-                <!-- Generate tugmasi -->
                 <button id="generateBtn" class="generate-btn" disabled>
                     <span class="btn-text">🎨 3D Model Yaratish</span>
                     <span class="spinner hidden"></span>
                 </button>
 
-                <!-- Holat xabari -->
                 <div id="status" class="status hidden"></div>
             </section>
 
@@ -76,9 +61,9 @@
             </section>
         </main>
 
-        <footer>
-            <p>Powered by <a href="https://three.ws" target="_blank" rel="noopener">three.ws Forge</a> — Bepul, API kalitsiz</p>
-        </footer>
+      <footer>
+    <p>Powered by <a href="https://huggingface.co/spaces/stabilityai/stable-point-aware-3d" target="_blank" rel="noopener">Stable Point-Aware 3D</a> — Bepul, API kalitsiz</p>
+</footer>
     </div>
 
     <script type="module" src="index.js"></script>
