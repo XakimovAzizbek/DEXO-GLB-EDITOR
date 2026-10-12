@@ -1,71 +1,49 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 3D Generator — Rasm → GLB</title>
-    <link rel="stylesheet" href="index.css">
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-            "@gradio/client": "https://cdn.jsdelivr.net/npm/@gradio/client@2.7.1/dist/index.min.js"
-        }
-    }
-    </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rasm → 3D GLB</title>
+  <link rel="stylesheet" href="index.css">
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
 </head>
 <body>
-    <div class="app">
-        <header>
-            <h1>🧊 AI 3D Generator</h1>
-            <p class="subtitle">Rasm yuklang — bir necha soniyada 3D GLB model oling</p>
-        </header>
+  <main class="card">
+    <h1>Rasm → 3D (.glb)</h1>
+    <p class="sub">Rasm yuklang, "Yaratish" tugmasini bosing.</p>
 
-        <main class="main-panel">
-            <section class="upload-panel">
-                <div id="dropZone" class="drop-zone">
-                    <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp" hidden>
-                    <div class="drop-content">
-                        <span class="drop-icon">📷</span>
-                        <p><strong>Rasmni bu yerga tashlang</strong></p>
-                        <p class="hint">yoki <button type="button" id="browseBtn" class="link-btn">fayl tanlang</button></p>
-                        <p class="formats">PNG, JPG, WebP — maks. 8 MB</p>
-                    </div>
-                </div>
+    <label class="drop" for="file">
+      <img id="preview" alt="" hidden>
+      <span id="dropText">📷 Rasm tanlash</span>
+    </label>
+    <input type="file" id="file" accept="image/*" hidden>
 
-                <div id="previewContainer" class="preview-container hidden">
-                    <img id="previewImage" alt="Yuklangan rasm">
-                    <button id="clearBtn" class="clear-btn" title="O'chirish">✕</button>
-                </div>
+    <label class="check">
+      <input type="checkbox" id="removeBg" checked>
+      Orqa fonni olib tashlash
+    </label>
 
-                <button id="generateBtn" class="generate-btn" disabled>
-                    <span class="btn-text">🎨 3D Model Yaratish</span>
-                    <span class="spinner hidden"></span>
-                </button>
+    <button id="createBtn" disabled>✨ Yaratish</button>
+    <p id="status" class="status"></p>
 
-                <div id="status" class="status hidden"></div>
-            </section>
+    <model-viewer id="viewer" camera-controls auto-rotate shadow-intensity="1" hidden></model-viewer>
 
-            <section class="viewer-panel">
-                <div id="viewer" class="viewer">
-                    <div class="viewer-placeholder">
-                        <span>🖼️</span>
-                        <p>3D model shu yerda paydo bo'ladi</p>
-                    </div>
-                </div>
-                <div class="viewer-actions">
-                    <button id="downloadBtn" class="action-btn" disabled>⬇️ GLB yuklab olish</button>
-                    <button id="resetCameraBtn" class="action-btn" disabled>🔄 Kamerani tiklash</button>
-                </div>
-            </section>
-        </main>
+    <a id="downloadBtn" class="download" hidden>⬇️ GLB yuklab olish</a>
 
-      <footer>
-    <p>Powered by <a href="https://huggingface.co/spaces/stabilityai/stable-point-aware-3d" target="_blank" rel="noopener">Stable Point-Aware 3D</a> — Bepul, API kalitsiz</p>
-</footer>
-    </div>
+    <details>
+      <summary>Sozlamalar</summary>
+      <label class="field">Hugging Face Space nomi
+        <input type="text" id="spaceId" value="stabilityai/TripoSR">
+      </label>
+      <label class="field">Sifat (mc_resolution): <b id="resVal">256</b>
+        <input type="range" id="resolution" min="128" max="320" step="32" value="256">
+      </label>
+      <label class="field">HF token (ixtiyoriy, limitni oshiradi)
+        <input type="password" id="hfToken" placeholder="hf_...">
+      </label>
+    </details>
+  </main>
 
-    <script type="module" src="index.js"></script>
+  <script type="module" src="index.js"></script>
 </body>
 </html>
