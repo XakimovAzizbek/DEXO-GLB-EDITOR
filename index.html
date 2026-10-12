@@ -17,31 +17,87 @@
 <body>
   <main class="card">
     <h1>Rasm → 3D (.glb)</h1>
-    <p class="sub">Brauzerning o'zida ishlaydi, internet limiti yo'q.</p>
+    <p class="sub">Brauzerning o'zida ishlaydi, limitsiz.</p>
 
-    <label class="drop" for="file">
-      <span id="dropText">📷 Rasm tanlash</span>
-    </label>
+    <label class="drop" for="file"><span id="dropText">📷 Rasm tanlash</span></label>
     <input type="file" id="file" accept="image/*" hidden>
 
     <div id="viewer" hidden></div>
 
     <div id="controls" hidden>
-      <label class="field">Balandlik (relyef): <b id="depthVal">0.30</b>
-        <input type="range" id="depth" min="0.02" max="1" step="0.02" value="0.3">
-      </label>
-      <label class="field">Silliqlash: <b id="smoothVal">2</b>
-        <input type="range" id="smooth" min="0" max="8" step="1" value="2">
-      </label>
-      <label class="field">Detal (to'r): <b id="resVal">160</b>
-        <input type="range" id="res" min="64" max="256" step="32" value="160">
-      </label>
-      <label class="check"><input type="checkbox" id="invert"> Teskari (qora = baland)</label>
+      <details class="sec" open>
+        <summary>🧊 Shakl</summary>
+        <label class="field">Shakl turi
+          <select id="mode">
+            <option value="relief">Relyef (old tomon + tekis taglik)</option>
+            <option value="double">Ikki tomonli (orqa tomon ham)</option>
+            <option value="sphere">Shar</option>
+            <option value="cylinder">Ustun (silindr)</option>
+          </select>
+        </label>
+        <label class="field">Balandlik: <b id="depthVal">0.30</b>
+          <input type="range" id="depth" min="0.02" max="1" step="0.02" value="0.3">
+        </label>
+        <label class="field">Silliqlash: <b id="smoothVal">2</b>
+          <input type="range" id="smooth" min="0" max="8" step="1" value="2">
+        </label>
+        <label class="field">Detal (to'r): <b id="resVal">160</b>
+          <input type="range" id="res" min="64" max="256" step="32" value="160">
+        </label>
+        <label class="check"><input type="checkbox" id="invert"> Teskari (qora = baland)</label>
+      </details>
+
+      <details class="sec">
+        <summary>✂️ Fonni olib tashlash</summary>
+        <label class="check"><input type="checkbox" id="removeBg"> Fonni o'chirish</label>
+        <label class="field">Sezgirlik: <b id="tolVal">30</b>
+          <input type="range" id="tol" min="5" max="90" step="1" value="30">
+        </label>
+        <p class="sub">Fon rangi rasm chetlaridan aniqlanadi. Bir xil rangli fonda yaxshi ishlaydi.</p>
+      </details>
+
+      <details class="sec">
+        <summary>🎨 Rang va yorug'lik</summary>
+        <label class="field">Sirt rangi
+          <select id="colorMode">
+            <option value="texture">Rasmning o'z rangi</option>
+            <option value="solid">Bir xil rang</option>
+          </select>
+        </label>
+        <div class="row">
+          <label class="field">Sirt rangi<input type="color" id="surfaceColor" value="#d9d9d9"></label>
+          <label class="field">Taglik/yon rangi<input type="color" id="sideColor" value="#9aa0ad"></label>
+        </div>
+        <label class="field">Yaltiroqlik (metall): <b id="metalVal">0.0</b>
+          <input type="range" id="metal" min="0" max="1" step="0.05" value="0">
+        </label>
+        <label class="field">Dag'allik: <b id="roughVal">0.8</b>
+          <input type="range" id="rough" min="0.1" max="1" step="0.05" value="0.8">
+        </label>
+        <label class="field">Yorug'lik (ko'rish uchun): <b id="lightVal">1.0</b>
+          <input type="range" id="light" min="0.2" max="2.5" step="0.1" value="1">
+        </label>
+        <label class="field">Orqa fon rangi (ko'rish uchun)
+          <input type="color" id="viewBg" value="#11141a">
+        </label>
+      </details>
+
+      <details class="sec">
+        <summary>🖼️ Ramka</summary>
+        <label class="check"><input type="checkbox" id="frame"> Ramka qo'shish (relyef va ikki tomonli)</label>
+        <label class="field">Ramka kengligi: <b id="frameWVal">0.05</b>
+          <input type="range" id="frameW" min="0.02" max="0.2" step="0.01" value="0.05">
+        </label>
+        <label class="field">Ramka rangi
+          <input type="color" id="frameColor" value="#8a5a2b">
+        </label>
+      </details>
     </div>
 
     <button id="createBtn" disabled>✨ Yaratish</button>
     <p id="status" class="status"></p>
     <a id="downloadBtn" class="download" hidden>⬇️ GLB yuklab olish</a>
+    <button id="shareBtn" class="share" hidden>📤 Telefonga ulashish</button>
   </main>
 
   <script type="module" src="index.js"></script>

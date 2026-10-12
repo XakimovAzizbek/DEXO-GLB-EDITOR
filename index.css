@@ -18,3 +18,13 @@ button:disabled { opacity:.45; cursor:not-allowed; }
 .download { background:#00b894; margin-top:12px; }
 .status { min-height:1.2em; margin:12px 0 0; font-size:.9rem; color:var(--muted); }
 .status.error { color:#ff7675; } .status.ok { color:#55efc4; }
+
+details.sec { margin-top:12px; border:1px solid var(--border); border-radius:12px; padding:10px 12px; }
+details.sec summary { cursor:pointer; font-weight:600; font-size:.95rem; }
+select, input[type=color] { width:100%; margin-top:6px; padding:8px; border-radius:8px; border:1px solid var(--border);
+  background:var(--bg); color:var(--text); font-size:.95rem; }
+input[type=color] { height:40px; padding:2px; }
+.row { display:flex; gap:10px; }
+.row > * { flex:1; }
+.share { background:#0984e3; margin-top:10px; }
+#controls { margin-bottom:12px; }
