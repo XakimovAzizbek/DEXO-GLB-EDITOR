@@ -11,7 +11,7 @@ ids.forEach((i) => (ui[i] = $(i)));
 const fileInput = $("file"), dropText = $("dropText"), viewerEl = $("viewer"), controlsEl = $("controls");
 const createBtn = $("createBtn"), statusEl = $("status"), downloadBtn = $("downloadBtn"), shareBtn = $("shareBtn");
 
-let img = null, group = null, downloadUrl = null, glbBlob = null;
+let img = null, group = null, glbBlob = null;
 let renderer, scene, camera, controls, hemi, dirLight;
 const BASE = 0.04;
 
@@ -332,11 +332,7 @@ function exportGlb() {
   new GLTFExporter().parse(
     group,
     (result) => {
-      glbBlob = new Blob([result], { type: "model/gltf-binary" });
-      if (downloadUrl) URL.revokeObjectURL(downloadUrl);
-      downloadUrl = URL.createObjectURL(glbBlob);
-      downloadBtn.href = downloadUrl;
-      downloadBtn.download = "model.glb";
+      glbBlob = new Blob([result], { type: "application/octet-stream" });
       downloadBtn.hidden = false;
       shareBtn.hidden = false;
       setStatus("Tayyor! ✅ (" + (glbBlob.size / 1024 / 1024).toFixed(2) + " MB)", "ok");
@@ -347,6 +343,45 @@ function exportGlb() {
   );
 }
 
+const inApp = /Telegram|Instagram|FBAN|FBAV|Line\//i.test(navigator.userAgent) || !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
+
+async function saveGlb() {
+  if (!glbBlob) return;
+  const name = "model.glb";
+  // 1) Fayl saqlash oynasi (qo'llab-quvvatlasa)
+  if (window.showSaveFilePicker) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: name,
+        types: [{ description: "GLB model", accept: { "application/octet-stream": [".glb"] } }],
+      });
+      const w = await handle.createWritable();
+      await w.write(glbBlob);
+      await w.close();
+      setStatus("Saqlandi ✅", "ok");
+      return;
+    } catch (e) {
+      if (e.name === "AbortError") return;
+      console.warn("showSaveFilePicker ishlamadi:", e);
+    }
+  }
+  // 2) Oddiy yuklab olish (a[download])
+  try {
+    const url = URL.createObjectURL(glbBlob);
+    const a = document.createElement("a");
+    a.href = url; a.download = name; a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 15000);
+    setStatus(inApp
+      ? "Telegram/ilova ichidagi brauzer yuklashni bloklaydi. Sahifani Chrome yoki Safari'da oching yoki \"Ulashish\" ni bosing."
+      : "Yuklab olish boshlandi. Chiqmasa \"Ulashish\" ni bosing.", inApp ? "error" : "ok");
+  } catch (e) {
+    console.error(e);
+    setStatus("Saqlab bo'lmadi: " + e.message + ". \"Ulashish\" tugmasini sinab ko'ring.", "error");
+  }
+}
+
 async function shareGlb() {
   if (!glbBlob) return;
   const file = new File([glbBlob], "model.glb", { type: "model/gltf-binary" });
@@ -355,7 +390,7 @@ async function shareGlb() {
       await navigator.share({ files: [file], title: "3D model" });
       setStatus("Ulashildi ✅", "ok");
     } else {
-      downloadBtn.click();
+      await saveGlb();
       setStatus("Bu qurilmada ulashish qo'llab-quvvatlanmaydi, fayl yuklab olindi.");
     }
   } catch (e) {
@@ -397,4 +432,5 @@ ui.viewBg.addEventListener("input", () => { if (scene) scene.background.set(ui.v
 
 createBtn.addEventListener("click", exportGlb);
 shareBtn.addEventListener("click", shareGlb);
+downloadBtn.addEventListener("click", saveGlb);
 showVals();
